@@ -380,8 +380,19 @@ workflow {
     giab_idx = Channel.fromPath('GRCh38_HG2-T2TQ100-V1.1.vcf.gz.tbi') 
     giab_bed = Channel.fromPath('GRCh38_HG2-T2TQ100-V1.1_stvar.benchmark.bed')
     
-    ont_vcfs = run_ont_callers(ref, ont_data, ont_data_idx, versions, delly_exe, convert_severus_script)
-    pacbio_vcfs = run_pacbio_callers(ref, pacbio_data, pacbio_data_idx, versions, delly_exe, sawfish_exe, convert_severus_script)
+    // Conditionally run workflows based on dataset
+    if (params.dataset == "cmrg" || params.dataset == "both") {
+        ont_vcfs = run_ont_callers(ref, ont_data, ont_data_idx, versions, delly_exe, convert_severus_script)
+    } else {
+        ont_vcfs = Channel.empty()
+    }
+
+    if (params.dataset == "giab" || params.dataset == "both") {
+        pacbio_vcfs = run_pacbio_callers(ref, pacbio_data, pacbio_data_idx, versions, delly_exe, sawfish_exe, convert_severus_script)
+    } else {
+        pacbio_vcfs = Channel.empty()
+    }
+
     all_vcfs = ont_vcfs.mix(pacbio_vcfs)
 
 
