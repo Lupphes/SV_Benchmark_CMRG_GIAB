@@ -366,13 +366,13 @@ workflow {
         pacbio_data = Channel.fromPath('chr1.pacbio_test.bam')
         pacbio_data_idx = Channel.fromPath('chr1.pacbio_test.bam.bai') 
     } else {
-        ont_data = Channel.fromPath('PAO89685.pass.cram')
-        ont_data_idx = Channel.fromPath('PAO89685.pass.cram.crai') 
-        pacbio_data = Channel.fromPath('m21009_241011_231051.GRCh38.haplotagged.bam')
-        pacbio_data_idx = Channel.fromPath('m21009_241011_231051.GRCh38.haplotagged.bam.bai') 
+        ont_data = params.ont_data ? Channel.fromPath(params.ont_data) : Channel.fromPath('PAO89685.pass.cram')
+        ont_data_idx = params.ont_data ? Channel.fromPath("${params.ont_data}.*") : Channel.fromPath('PAO89685.pass.cram.crai')
+        pacbio_data = params.pacbio_data ? Channel.fromPath(params.pacbio_data) : Channel.fromPath('m21009_241011_231051.GRCh38.haplotagged.bam')
+        pacbio_data_idx = params.pacbio_data ? Channel.fromPath("${params.pacbio_data}.*") : Channel.fromPath('m21009_241011_231051.GRCh38.haplotagged.bam.bai')
     }
 
-    ref = Channel.fromPath('GCA_000001405.15_GRCh38_no_alt_analysis_set.fna')
+    ref = params.ref ? Channel.fromPath(params.ref) : Channel.fromPath('GCA_000001405.15_GRCh38_no_alt_analysis_set.fna')
     cmrg_truth = Channel.fromPath('HG002_GRCh38_difficult_medical_gene_SV_benchmark_v0.01.vcf.gz')
     cmrg_idx = Channel.fromPath('HG002_GRCh38_difficult_medical_gene_SV_benchmark_v0.01.vcf.gz.tbi') 
     cmrg_bed = Channel.fromPath('HG002_GRCh38_difficult_medical_gene_SV_benchmark_v0.01.bed')
