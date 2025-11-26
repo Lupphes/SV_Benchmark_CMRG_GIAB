@@ -260,18 +260,23 @@ workflow run_pacbio_callers {
         ref
         input_bam
         idx
+        tagged_bam
+        tagged_idx
         versions
         delly_exe
         sawfish_exe
         convert_severus_script
 
     main:
+        // Run most callers on original BAM
         sniffles_res = RUN_SNIFFLES(ref, input_bam, idx, versions, data_type)
         dysgu_res = RUN_DYSGU(ref, input_bam, idx, versions, data_type)
         cutesv_res = RUN_CUTESV(ref, input_bam, idx, versions, data_type)
-        severus_res = RUN_SEVERUS(ref, input_bam, idx, versions, data_type, convert_severus_script)
         delly_res = RUN_DELLY(ref, input_bam, idx, versions, data_type, delly_exe)
         sawfish_res = RUN_SAWFISH(ref, input_bam, idx, versions, sawfish_exe)
+
+        // Run Severus on tagged BAM (with NM tags)
+        severus_res = RUN_SEVERUS(ref, tagged_bam, tagged_idx, versions, data_type, convert_severus_script)
 
         pacbio_vcfs = sniffles_res.vcf.mix(
             dysgu_res.vcf,
@@ -411,7 +416,7 @@ workflow {
     if (params.dataset == "giab" || params.dataset == "both") {
         // Add NM tags to PacBio BAM for Severus compatibility
         tagged_pacbio = ADD_NM_TAG(ref, pacbio_data, pacbio_data_idx)
-        pacbio_vcfs = run_pacbio_callers(ref, tagged_pacbio.bam, tagged_pacbio.bai, versions, delly_exe, sawfish_exe, convert_severus_script)
+        pacbio_vcfs = run_pacbio_callers(ref, pacbio_data, pacbio_data_idx, tagged_pacbio.bam, tagged_pacbio.bai, versions, delly_exe, sawfish_exe, convert_severus_script)
     } else {
         pacbio_vcfs = Channel.empty()
     }
