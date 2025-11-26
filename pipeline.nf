@@ -200,6 +200,27 @@ process RUN_SAWFISH {
 }
 
 
+process ADD_NM_TAG {
+    tag "add_nm_tag"
+
+    input:
+        path ref
+        path input_bam
+        path idx
+
+    output:
+        path "*.nm.bam", emit: bam
+        path "*.nm.bam.bai", emit: bai
+
+    script:
+    def basename = input_bam.baseName
+    """
+    samtools calmd -b ${input_bam} ${ref} > ${basename}.nm.bam
+    samtools index ${basename}.nm.bam
+    """
+}
+
+
 workflow run_ont_callers {
 
     data_type = 'ont'
@@ -388,7 +409,9 @@ workflow {
     }
 
     if (params.dataset == "giab" || params.dataset == "both") {
-        pacbio_vcfs = run_pacbio_callers(ref, pacbio_data, pacbio_data_idx, versions, delly_exe, sawfish_exe, convert_severus_script)
+        // Add NM tags to PacBio BAM for Severus compatibility
+        tagged_pacbio = ADD_NM_TAG(ref, pacbio_data, pacbio_data_idx)
+        pacbio_vcfs = run_pacbio_callers(ref, tagged_pacbio.bam, tagged_pacbio.bai, versions, delly_exe, sawfish_exe, convert_severus_script)
     } else {
         pacbio_vcfs = Channel.empty()
     }
