@@ -180,6 +180,7 @@ process RUN_DELLY {
 
 process RUN_SAWFISH {
     publishDir "${params.outdir}/calls", mode: 'copy'
+    errorStrategy 'ignore'
 
     input:
         path ref
@@ -189,7 +190,7 @@ process RUN_SAWFISH {
         path sawfish_exe
 
     output:
-        path "HG002.pacbio.sawfish_*.vcf", emit: vcf
+        path "HG002.pacbio.sawfish_*.vcf", emit: vcf, optional: true
 
     script:
     """
