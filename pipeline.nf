@@ -222,6 +222,30 @@ process ADD_NM_TAG {
 }
 
 
+process FIX_BAM_FOR_SAWFISH {
+    tag "fix_for_sawfish"
+
+    input:
+        path input_bam
+        path idx
+
+    output:
+        path "*.fixed.bam", emit: bam
+        path "*.fixed.bam.bai", emit: bai
+
+    script:
+    def basename = input_bam.baseName
+    """
+    # Fix mate information and re-sort by coordinate
+    samtools sort -n -o tmp.namesorted.bam ${input_bam}
+    samtools fixmate -m tmp.namesorted.bam tmp.fixmate.bam
+    samtools sort -o ${basename}.fixed.bam tmp.fixmate.bam
+    samtools index ${basename}.fixed.bam
+    rm tmp.namesorted.bam tmp.fixmate.bam
+    """
+}
+
+
 workflow run_ont_callers {
 
     data_type = 'ont'
@@ -263,6 +287,8 @@ workflow run_pacbio_callers {
         idx
         tagged_bam
         tagged_idx
+        fixed_bam
+        fixed_idx
         versions
         delly_exe
         sawfish_exe
@@ -274,7 +300,9 @@ workflow run_pacbio_callers {
         dysgu_res = RUN_DYSGU(ref, input_bam, idx, versions, data_type)
         cutesv_res = RUN_CUTESV(ref, input_bam, idx, versions, data_type)
         delly_res = RUN_DELLY(ref, input_bam, idx, versions, data_type, delly_exe)
-        sawfish_res = RUN_SAWFISH(ref, input_bam, idx, versions, sawfish_exe)
+
+        // Run Sawfish on fixed BAM (with repaired mate info)
+        sawfish_res = RUN_SAWFISH(ref, fixed_bam, fixed_idx, versions, sawfish_exe)
 
         // Run Severus on tagged BAM (with NM tags)
         severus_res = RUN_SEVERUS(ref, tagged_bam, tagged_idx, versions, data_type, convert_severus_script)
@@ -417,7 +445,9 @@ workflow {
     if (params.dataset == "giab" || params.dataset == "both") {
         // Add NM tags to PacBio BAM for Severus compatibility
         tagged_pacbio = ADD_NM_TAG(ref, pacbio_data, pacbio_data_idx)
-        pacbio_vcfs = run_pacbio_callers(ref, pacbio_data, pacbio_data_idx, tagged_pacbio.bam, tagged_pacbio.bai, versions, delly_exe, sawfish_exe, convert_severus_script)
+        // Fix BAM structure for Sawfish compatibility
+        fixed_pacbio = FIX_BAM_FOR_SAWFISH(pacbio_data, pacbio_data_idx)
+        pacbio_vcfs = run_pacbio_callers(ref, pacbio_data, pacbio_data_idx, tagged_pacbio.bam, tagged_pacbio.bai, fixed_pacbio.bam, fixed_pacbio.bai, versions, delly_exe, sawfish_exe, convert_severus_script)
     } else {
         pacbio_vcfs = Channel.empty()
     }
