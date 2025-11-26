@@ -378,10 +378,6 @@ process BENCHMARK {
                     -c \${vcf_file}.gz \
                     ${bench_params} \
                     -o truvari_GIAB_\${tech}_\${caller_name}
-
-        truvari refine -a wfa -f ${ref} \
-                    --regions truvari_GIAB_\${tech}_\${caller_name}/candidate.refine.bed \
-                    truvari_GIAB_\${tech}_\${caller_name}/
    
     done
     """
